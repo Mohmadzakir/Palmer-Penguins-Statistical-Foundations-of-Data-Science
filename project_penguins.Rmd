@@ -1,0 +1,537 @@
+---
+title: "Final_Project_MAS8403_ Statistical Foundations of Data Science"
+author: "Mohmadzakir_Chotaliya_240572857"
+date: 2024-10-27
+fontsize: 11pt
+output: 
+  pdf_document:
+    latex_engine: pdflatex  # Forces use of TinyTeX if set as default
+---
+
+```{r setup, include=FALSE}
+# Load necessary packages
+library(palmerpenguins)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(MASS)
+library(fitdistrplus)
+library(dplyr)
+library(gridExtra)
+library(stats)
+
+
+# Load and preprocess the data
+data("penguins")  # Load the penguins dataset
+penguins <- na.omit(penguins)  # Remove NA values
+n <- 200  # Define sample size
+my.student.number <- 240572857  # Replace with your actual student number
+set.seed(my.student.number)  # Set seed for reproducibility
+my.penguins <- penguins[sample(nrow(penguins), n), ]  # Sample 200 penguins
+```
+
+
+\LARGE \textbf{Introduction}
+
+\small
+In this report, we will analyze sample of 200 Palmer penguins from the Palmer Penguins dataset. The aim is to explore physical characteristics, distributions, and relationships among species, islands, and sexes.
+
+
+\LARGE \textbf{TASK-1: Exploratory Data Analysis}
+
+```{r Summary Statistics, echo = FALSE }
+# Numerical summary as a table
+summary_table <- summary(my.penguins[, c("species", "island", "bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g", "sex", "year")])
+kable(summary_table, caption = "Summary Statistics for Key Variables in Specified Order") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 7, position = "center")
+```
+
+\small
+The penguin dataset provides a snapshot of physical attributes across three species—Adelie, Chinstrap, and Gentoo—observed on the Biscoe, Dream, and Torgersen islands. Bill length ranges from 33.1 to 58.0 mm, with a median of 45.2 mm and an average of 44.2 mm. Bill depth varies between 13.1 and 21.5 mm, with a median of 17.3 mm. Flipper length spans from 174.0 to 231.0 mm, with a median of 198.0 mm and a mean of 201.4 mm. Body mass is quite diverse, ranging from 2700 to 6300 g, with a median of 4050 g and an average of 4229 g. The sample includes 101 female and 99 male penguins, with data collected from 2007 to 2009, giving insight into the species' distribution and physical diversity over time.
+\normalsize
+
+
+
+
+\Large  \textbf{Data Table of Sampled Penguins}
+
+
+```{r Data Table of Sampled Penguins, echo = FALSE }
+summary_table <- head(my.penguins[, c("species", "island", "bill_length_mm", "bill_depth_mm", 
+                                      "flipper_length_mm", "body_mass_g", "sex", "year")], 10)
+
+# Display the table with 9-point font size, centered, and styled
+kable(summary_table, caption = "Sample of 200 Penguins Data (first 10 rows)") %>%
+  kable_styling(font_size = 8, latex_options = c("hold_position", "striped"), position = "center")
+
+```
+
+
+
+\small
+This sample of 200 penguins includes three species—Adelie, Chinstrap, and Gentoo—observed across three islands: Biscoe, Dream, and Torgersen. The bill length ranges from 33.1 mm to 58.0 mm, with a median around 45 mm. Bill depth varies between 13.1 mm and 21.5 mm, averaging around 17 mm. Flipper length spans from 174 mm to 231 mm, and body mass ranges from 2700 g to 6300 g, showing substantial diversity in size. The sample is balanced between males and females and covers observations from 2007 to 2009, providing insights into penguin morphology across species and time.
+\normalsize
+
+
+
+\LARGE \textbf{Graphical Representations}
+
+\Large  \textbf{i) Distribution of Bill Length by Species}
+
+```{r density-plot, echo=FALSE, fig.width=8, fig.height=3.5}
+# Load necessary library
+
+ggplot(my.penguins, aes(x = bill_length_mm, fill = species)) +
+  geom_density(alpha = 0.6) +
+  labs(title = "Density Plot of Bill Length by Species", x = "Bill Length (mm)", y = "Density") +
+  theme_minimal()
+
+```
+
+
+\small
+The density plot shows that Adelie penguins have the shortest bill lengths (35-41 mm), Chinstrap penguins have the longest (45-55 mm, peaking around 50 mm), and Gentoo penguins fall in between with a broader range (40-50 mm). This indicates that Chinstrap penguins typically have longer bills, while Adelie penguins have shorter ones.
+\normalsize
+
+
+\Large  \textbf{ii) Box Plot of Bill Depth Across Islands}
+
+```{r Box Plot, echo=FALSE, fig.width=8, fig.height=3.5}
+library(ggplot2)
+
+ggplot(my.penguins, aes(x = island, y = bill_depth_mm, fill = island)) +
+  geom_boxplot() +
+  labs(title = "Box Plot of Bill Depth by Island", x = "Island", y = "Bill Depth (mm)") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set1", direction = -1)  # Use "Set1" palette and reverse for darker colors
+
+
+```
+
+
+\small
+The box plot shows that penguins on Biscoe island generally have the lowest bill depth, with a median around 15 mm and a few outliers above 20 mm. Dream island penguins have a higher bill depth, with a median closer to 17 mm, and a somewhat narrow range. Torgersen island penguins display similar bill depths to those on Dream island, with a slightly higher median. This suggests some variability in bill depth across islands, with Biscoe penguins tending to have shallower bills.
+\normalsize
+
+
+
+
+\Large  \textbf{iii) Violin Plot of Flipper Length by Sex}
+
+```{r Violin Plot, echo=FALSE, fig.width=8, fig.height=3.5}
+library(ggplot2)
+
+ggplot(my.penguins, aes(x = sex, y = flipper_length_mm, fill = sex)) +
+  geom_violin(trim = FALSE) +
+  labs(title = "Violin Plot of Flipper Length by Sex", x = "Sex", y = "Flipper Length (mm)") +
+  theme_minimal() +
+  scale_fill_manual(values = c("orange", "navy"))
+
+
+```
+
+
+\small
+The violin plot shows the distribution of flipper lengths by sex among penguins. Male penguins generally have longer flippers, with lengths peaking around 210 mm to 225 mm, while female penguins have shorter flippers, with lengths clustering around 190 mm to 205 mm. The plot shows that males have a wider range of flipper lengths compared to females. Both distributions display some symmetry but have distinct peaks, indicating differences in flipper length distributions between male and female penguins.
+\normalsize
+
+
+
+
+\Large  \textbf{iv)  Faceted Scatter Plot of Body Mass vs Bill Length by Species and Sex}
+
+```{r Faceted Scatter Plot, echo=FALSE, fig.width=8, fig.height=3.5}
+library(ggplot2)
+
+ggplot(my.penguins, aes(x = bill_length_mm, y = body_mass_g, color = sex)) +
+  geom_point(alpha = 0.7) +
+  facet_wrap(~species) +
+  labs(title = "Body Mass vs Bill Length by Species and Sex", x = "Bill Length (mm)", y = "Body Mass (g)") +
+  theme_minimal() +
+  scale_color_manual(values = c("orange", "purple"))
+
+
+```
+
+
+\small
+The scatter plot shows the relationship between body mass and bill length across different penguin species (Adelie, Chinstrap, and Gentoo) and sex. Adelie penguins have shorter bill lengths and lower body mass, clustering between 30-40 mm and 3000-4000 g. Chinstrap penguins have slightly longer bills, mainly around 40-50 mm, with body mass centered around 3500-4500 g. Gentoo penguins exhibit the largest body mass (up to 6000 g) and longest bills (over 50 mm), with clear separation between males and females. Males generally have a higher body mass than females across all species, shown by the distinction in color.
+\normalsize
+
+
+
+
+
+
+\Large  \textbf{v)  Correlation Heatmap of Numerical Variables}
+
+```{r Correlation Heatmap, echo=FALSE, fig.width=8, fig.height=3.5}
+library(reshape2)
+cor_data <- cor(my.penguins[, c("bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g")], use = "complete.obs")
+melted_cor_data <- melt(cor_data)
+
+ggplot(melted_cor_data, aes(Var1, Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, limit = c(-1,1)) +
+  labs(title = "Correlation Heatmap of Numerical Variables", x = "", y = "") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+
+```
+
+
+\small
+The correlation heatmap illustrates relationships among the numerical variables: bill length, bill depth, flipper length, and body mass. Dark red indicates strong positive correlations, while purple and blue indicate weaker or negative correlations. Bill length shows a strong positive correlation with bill depth and flipper length, suggesting that penguins with longer bills also tend to have greater bill depth and flipper length. Body mass has a moderate positive correlation with flipper length, indicating that penguins with larger body masses generally have longer flippers. This visual summary highlights key associations between physical traits among penguins.
+\normalsize
+
+
+\LARGE \textbf{Conclusion}
+
+\small
+This extended EDA of the penguin dataset showcases a range of graphical summaries, revealing distinct differences in physical characteristics across species, sex, and islands. Each visualization provides a unique perspective on the data, offering comprehensive insights into penguin morphology and habitat-specific adaptations.
+\normalsize
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\LARGE \textbf{TASK-2: Fitting Different Distributions to Body Mass}
+
+\small
+We fit three different distributions to the body mass variable: Normal, Log-normal, and Gamma distributions. Each fit is assessed visually and statistically.
+\normalsize
+
+
+
+\Large  \textbf{i) Normal Distribution}
+
+\small
+The histogram shows penguin body mass with a fitted Normal distribution overlay. While the Normal curve approximates the center, it does not fully capture the data's spread and skew, indicating limitations in accurately modeling body mass with this distribution.
+\normalsize
+
+
+```{r Normal Distribution, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=3.5}
+# Fit Normal distribution
+normal_fit <- fitdist(my.penguins$body_mass_g, "norm")
+
+# Plot histogram and Normal distribution
+ggplot(my.penguins, aes(x = body_mass_g)) +
+  geom_histogram(aes(y = ..density..), binwidth = 200, fill = "lightblue", color = "black") +
+  stat_function(fun = dnorm, args = list(mean = normal_fit$estimate[1], sd = normal_fit$estimate[2]), color = "red", size = 1) +
+  labs(title = "Body Mass with Fitted Normal Distribution", x = "Body Mass (g)", y = "Density") +
+  theme_minimal()
+
+```
+
+
+
+
+
+
+\Large  \textbf{ii)Log-Normal Distribution}
+
+\small
+The histogram shows the distribution of penguin body mass with a fitted Log-normal distribution overlayed in green. The Log-normal curve follows the overall shape of the histogram more closely than a Normal distribution, effectively capturing the right skew in body mass. This suggests that the Log-normal distribution is a suitable model for representing body mass in penguins, as it better accommodates the asymmetry and spread in the data.
+\normalsize
+
+
+```{r Log-Normal Distribution, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=3.5}
+# Fit Log-normal distribution
+lognormal_fit <- fitdist(my.penguins$body_mass_g, "lnorm")
+
+# Plot histogram and Log-normal distribution
+ggplot(my.penguins, aes(x = body_mass_g)) +
+  geom_histogram(aes(y = ..density..), binwidth = 200, fill = "steelblue", color = "black") +
+  stat_function(fun = dlnorm, args = list(meanlog = lognormal_fit$estimate[1], sdlog = lognormal_fit$estimate[2]), color = "green", size = 1) +
+  labs(title = "Body Mass with Fitted Log-normal Distribution", x = "Body Mass (g)", y = "Density") +
+  theme_minimal()
+
+```
+
+
+
+
+\Large  \textbf{iii) Gamma Distribution}
+
+\small
+The histogram illustrates the distribution of penguin body mass with an overlaid Gamma distribution in orange. The Gamma curve closely follows the shape of the histogram, effectively capturing the skew in body mass data. This alignment suggests that the Gamma distribution is a suitable model for representing penguin body mass, as it accommodates the right skew and variability better than a symmetric distribution would.
+\normalsize
+
+
+```{r  Gamma Distribution, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=3.5}
+# Fit Gamma distribution
+gamma_fit <- fitdist(my.penguins$body_mass_g, "gamma")
+
+# Plot histogram and Gamma distribution
+ggplot(my.penguins, aes(x = body_mass_g)) +
+    geom_histogram(aes(y = ..density..), binwidth = 200, fill = "dodgerblue3", color = "darkblue") +  # Darker blue for histogram
+    stat_function(fun = dgamma, args = list(shape = gamma_fit$estimate[1], rate = gamma_fit$estimate[2]), color = "orange", size = 1) +  # Orange for Gamma curve
+    labs(title = "Body Mass with Fitted Gamma Distribution", x = "Body Mass (g)", y = "Density") +
+    theme_minimal()
+
+```
+
+
+\Large  \textbf{Goodness-of-Fit Comparison}
+
+\small
+We evaluate the goodness-of-fit for each distribution using the Akaike Information Criterion (AIC). Lower AIC values indicate a better fit.
+\normalsize
+
+
+```{r  Goodness-of-Fit Comparison, echo=FALSE, warning=FALSE, message=FALSE, fig.width=15, fig.height=3.5}
+# Extract AIC values for each distribution fit
+aic_values <- data.frame(
+  Distribution = c("Normal", "Log-normal", "Gamma"),
+  AIC = c(normal_fit$aic, lognormal_fit$aic, gamma_fit$aic)
+)
+
+# Display AIC values in a table
+kable(aic_values, caption = "AIC Values for Distribution Fits") %>%
+  kable_styling(font_size = 8, latex_options = "hold_position", position = "center")
+
+```
+
+
+\small
+The table displays Akaike Information Criterion (AIC) values for three distribution fits (Normal, Log-normal, and Gamma) on penguin body mass data. The Log-normal distribution has the lowest AIC value (3223.673), followed by the Normal distribution (3243.132), and the Gamma distribution (3223.526). Lower AIC values indicate a better fit; therefore, the Log-normal distribution is the best fit among the three, suggesting it models the body mass data most effectively.
+\normalsize
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\LARGE \textbf{TASK-3: Exploratory Analysis of Variables Based on Sex}
+
+\small
+In this section, we examine body mass, flipper length, and bill measurements to identify which variables best distinguish between male and female penguins.
+\normalsize
+
+\Large  \textbf{Summary Statistics by Sex}
+
+
+```{r  Summary Statistics by Sex, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=3.5}
+# Calculate summary statistics for each measurement by sex
+summary_by_sex <- my.penguins %>%
+  group_by(sex) %>%
+  summarise(
+    Mean_Body_Mass = mean(body_mass_g),
+    Mean_Flipper_Length = mean(flipper_length_mm),
+    Mean_Bill_Length = mean(bill_length_mm),
+    Mean_Bill_Depth = mean(bill_depth_mm)
+  )
+
+# Display summary statistics in a table
+kable(summary_by_sex, caption = "Summary Statistics of Measurements by Sex") %>%
+  kable_styling(latex_options = "hold_position", font_size = 8, position = "center")
+```
+
+\small
+The summary shows that male penguins have a higher average body mass (4534.34 g) and flipper length (204.38 mm) than females, who average 3928.96 g and 198.14 mm, respectively. Males also have slightly longer bill lengths (45.76 mm) and deeper bills (17.38 mm) compared to females, indicating noticeable differences in physical traits by sex.
+\normalsize
+
+\LARGE \textbf{Graphical Analysis}
+
+\Large  \textbf{Box Plot of Body Mass by Sex}
+
+```{r  Box Plot of Body Mass by Sex, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=3}
+
+ggplot(my.penguins, aes(x = sex, y = body_mass_g, fill = sex)) +
+  geom_boxplot(outlier.color = "black", outlier.shape = 16, outlier.size = 2) +
+  labs(title = "Body Mass by Sex", x = "Sex", y = "Body Mass (g)") +
+  theme_minimal(base_size = 15) +
+  scale_fill_manual(values = c("steelblue", "indianred")) +  # Darker blue and red colors
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 16),  # Center and bold the title
+    axis.title = element_text(face = "bold"),  # Bold axis titles
+    legend.position = "top",  # Move legend to the top
+    panel.grid.major = element_line(color = "gray80")  # Lighten grid lines
+  )
+```
+
+
+\small
+The box plot shows that male penguins typically have higher body mass than females, with minimal overlap. This difference in body mass between sexes suggests it may be a reliable indicator for sex estimation.
+\normalsize
+
+
+
+\Large  \textbf{Box Plot of Flipper Length by Sex}
+
+```{r  Box Plot of Flipper Length by Sex, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=3}
+
+ggplot(my.penguins, aes(x = sex, y = flipper_length_mm, fill = sex)) +
+  geom_boxplot() +
+  labs(title = "Flipper Length by Sex", x = "Sex", y = "Flipper Length (mm)") +
+  theme_minimal() +
+  scale_fill_manual(values = c("forestgreen", "firebrick"))
+```
+
+
+\small
+The box plot shows that male penguins generally have longer flippers than females. Males have a median flipper length around 205 mm, with values typically ranging from 190 mm to 230 mm. Female flipper lengths are shorter on average, with a median around 200 mm and a range mostly between 185 mm and 215 mm. This difference suggests that flipper length may be useful in distinguishing between male and female penguins.
+\normalsize
+
+
+\Large  \textbf{Reliability Assessment for Sex Prediction}
+
+\small
+To assess the reliability of using body mass and flipper length as indicators for sex, we can calculate the separation between male and female measurements using the overlap of distributions and correlation analysis.
+\normalsize
+
+```{r side-by-side-density-plots, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=2}
+library(ggplot2)
+library(gridExtra)
+
+# Density plot for body mass
+plot_body_mass_density <- ggplot(my.penguins, aes(x = body_mass_g, fill = sex)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Density Plot of Body Mass by Sex", x = "Body Mass (g)", y = "Density") +
+  theme_minimal() +
+  scale_fill_manual(values = c("lightblue", "lightpink"))
+
+# Density plot for flipper length
+plot_flipper_length_density <- ggplot(my.penguins, aes(x = flipper_length_mm, fill = sex)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Density Plot of Flipper Length by Sex", x = "Flipper Length (mm)", y = "Density") +
+  theme_minimal() +
+  scale_fill_manual(values = c("lightgreen", "lightcoral"))
+
+# Display side by side
+grid.arrange(plot_body_mass_density, plot_flipper_length_density, ncol = 2)
+```
+
+
+\small
+The plots indicate that male penguins typically have higher body mass and longer flipper lengths than females, suggesting both traits are useful for sex prediction, especially body mass.
+\normalsize
+
+\Large  \textbf{Conclusion}
+
+\small
+Body mass and flipper length effectively distinguish male from female penguins, with males generally having higher body mass and longer flippers. Body mass shows stronger separation, making it a reliable, non-invasive indicator for sex estimation.
+\normalsize
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\LARGE \textbf{TASK-4: Impact of Island on Penguin Physical Characteristics}
+
+\small
+The below field plots show the distribution of frame mass, flipper length, invoice length, and invoice intensity with the help of using island to visually examine characteristics.
+\normalsize
+
+
+```{r summary_impact_of_island_part, echo=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=3}
+
+
+plot_body_mass <- ggplot(my.penguins, aes(x = island, y = body_mass_g, fill = island)) +
+  geom_boxplot() +
+  labs(title = "Body Mass by Island", x = "Island", y = "Body Mass (g)") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set2")
+
+
+plot_flipper_length <- ggplot(my.penguins, aes(x = island, y = flipper_length_mm, fill = island)) +
+  geom_boxplot() +
+  labs(title = "Flipper Length by Island", x = "Island", y = "Flipper Length (mm)") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set2")
+
+
+plot_bill_length <- ggplot(my.penguins, aes(x = island, y = bill_length_mm, fill = island)) +
+  geom_boxplot() +
+  labs(title = "Bill Length by Island", x = "Island", y = "Bill Length (mm)") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set2")
+
+
+plot_bill_depth <- ggplot(my.penguins, aes(x = island, y = bill_depth_mm, fill = island)) +
+  geom_boxplot() +
+  labs(title = "Bill Depth by Island", x = "Island", y = "Bill Depth (mm)") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set2")
+
+
+grid.arrange(plot_body_mass, plot_flipper_length, plot_bill_length, plot_bill_depth, ncol = 2)
+```
+
+
+\small
+The boxplots shows that Biscoe penguins have the highest body mass (4,700g), flipper length (210 mm), and bill length (45 mm). Torgersen penguins are lighter (3,700g) with shorter flippers (190 mm) but have the greatest bill depth (18 mm), showing clear island-based differences.
+\normalsize
+
+
+```{r  ANOVA Test for Body Mass by Island, include=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=3.5}
+anova_body_mass <- aov(body_mass_g ~ island, data = my.penguins)
+summary(anova_body_mass)
+```
+
+
+```{r ANOVA Test for Flipper Length by Island, include=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=3.5}
+anova_flipper_length <- aov(flipper_length_mm ~ island, data = my.penguins)
+summary(anova_flipper_length)
+```
+
+```{rANOVA Test for Bill Length by Island, include=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=3.5}
+anova_bill_length <- aov(bill_length_mm ~ island, data = my.penguins)
+summary(anova_bill_length)
+```
+
+```{r ANOVA Test for Bill Depth by Island, include=FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=3.5}
+anova_bill_depth <- aov(bill_depth_mm ~ island, data = my.penguins)
+summary(anova_bill_depth)
+```
+
+
+\Large  \textbf{Conclusion}
+
+\small
+The analysis indicates that island origin significantly affects certain physical characteristics of penguins. ANOVA results show significant differences in body mass (p < 0.05) and flipper length (p < 0.05) across islands, with median body mass ranging from 3700 g to 5000 g and flipper length from 185 mm to 210 mm depending on the island. These findings suggest that island-specific environmental factors likely influence penguin morphology, potentially due to differences in resources and habitat conditions.
+\normalsize
